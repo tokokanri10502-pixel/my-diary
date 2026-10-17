@@ -263,16 +263,24 @@ mark{background:rgba(255,206,84,.55);color:inherit;border-radius:3px;padding:0 1
   .since{margin-left:1px;font-size:10px;letter-spacing:.06em}
   .icon{width:36px;height:36px}
   .wrap{height:auto}
-  .page{padding:20px 18px 14px;border-radius:20px}
+  /* 書くカードを画面いっぱいに（「この1週間」は下にスクロール） */
+  .page{padding:16px 16px 12px;border-radius:20px;min-height:calc(100vh - 76px);min-height:calc(100dvh - 76px - env(safe-area-inset-top))}
   .foot{gap:10px;flex-wrap:wrap}
   .field,select{font-size:16px}
   .months{gap:6px}
-  /* 日付の行：1段目に日付、2段目に「今日」「祝日」と前後の矢印 */
-  .head{display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:center;column-gap:8px}
-  .datebtn{grid-column:1/4;grid-row:1;white-space:nowrap;gap:12px}
-  .nav{grid-column:3;grid-row:2;justify-self:end;margin:8px -8px 0 0}
-  .pill{grid-row:2;justify-self:start;margin:8px 0 0}
-  .rule{margin:18px 0 4px}
+  /* 日付の行：日付・「今日」（祝日）・前後の矢印を1段に */
+  .head{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:end;column-gap:6px}
+  .datebtn{grid-column:1;grid-row:1/3;white-space:nowrap;gap:8px}
+  .dnum{font-size:33px}
+  .dnum small{font-size:13px;margin:0 5px 0 2px}
+  .dmeta .wd{font-size:15px}
+  .pill{grid-column:2;justify-self:start;margin:0;font-size:11px;padding:2px 8px;white-space:normal;line-height:1.35;text-align:center}
+  #dRel{grid-row:2;margin-bottom:5px}
+  #dHol{grid-row:1;margin-bottom:3px}
+  .nav{grid-column:4;grid-row:1/3;align-self:center;margin:0 -6px 0 0;gap:0}
+  .nav button{min-width:28px;height:34px;padding:0 2px}
+  .rule{margin:12px 0 0}
+  #text{padding-top:10px}
 }
 /* タッチ端末ではホバーできないので削除ボタンを常に表示 */
 @media (hover: none){ .ph .x{opacity:1} }
