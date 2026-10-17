@@ -76,6 +76,7 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .sun{color:var(--sun)!important}.sat{color:var(--sat)!important}
 .pill{font-size:12px;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);margin-bottom:8px;white-space:nowrap}
 .pill.hol{background:var(--hol-soft);color:var(--sun)}
+.pills{display:contents}
 .nav{margin-left:auto;display:flex;gap:4px;margin-bottom:4px}
 .nav button{height:36px;min-width:36px;padding:0 10px;border-radius:10px;color:var(--sub);display:grid;place-items:center;font-size:13px;transition:background .15s,color .15s}
 .nav button:hover:not(:disabled){background:var(--bg);color:var(--ink)}
@@ -268,20 +269,24 @@ mark{background:rgba(255,206,84,.55);color:inherit;border-radius:3px;padding:0 1
   .foot{gap:10px;flex-wrap:wrap}
   .field,select{font-size:16px}
   .months{gap:6px}
-  /* 日付の行：日付・「今日」（祝日）・前後の矢印を1段に */
-  .head{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:end;column-gap:6px}
-  .datebtn{grid-column:1;grid-row:1/3;white-space:nowrap;gap:8px}
-  .dnum{font-size:33px}
+  /* 日付の行：日付・曜日・「今日」・前後の矢印を1段に、下端をそろえる */
+  .head{display:flex;flex-wrap:nowrap;align-items:flex-end;gap:8px}
+  .datebtn{flex:0 0 auto;white-space:nowrap;gap:8px;align-items:flex-end}
+  .dnum{font-size:33px;line-height:1}
   .dnum small{font-size:13px;margin:0 5px 0 2px}
-  .dmeta .wd{font-size:15px}
-  .pill{grid-column:2;justify-self:start;margin:0;font-size:11px;padding:2px 8px;white-space:normal;line-height:1.35;text-align:center}
-  #dRel{grid-row:2;margin-bottom:5px}
-  #dHol{grid-row:1;margin-bottom:3px}
-  .nav{grid-column:4;grid-row:1/3;align-self:center;margin:0 -6px 0 0;gap:0}
-  .nav button{min-width:28px;height:34px;padding:0 2px}
+  .dmeta{padding-bottom:1px}
+  .dmeta .ym{font-size:11px;line-height:1.3}
+  .dmeta .wd{font-size:15px;line-height:1.2}
+  /* 「今日」の上に祝日名を小さく重ねる */
+  .pills{position:relative;display:flex;align-items:flex-end;flex:0 0 auto}
+  .pill{margin:0 0 1px;font-size:11px;padding:2px 8px;line-height:1.35;white-space:nowrap}
+  #dHol{position:absolute;left:0;bottom:calc(100% + 3px);margin:0;font-size:10px;padding:1px 7px}
+  .nav{flex:0 0 auto;margin:0 -6px -3px auto;gap:0}
+  .nav button{min-width:28px;height:28px;padding:0 2px}
   .rule{margin:12px 0 0}
   #text{padding-top:10px}
 }
+@media (max-width: 370px){ .dnum{font-size:29px} .dmeta .wd{font-size:14px} .head{gap:6px} }
 /* タッチ端末ではホバーできないので削除ボタンを常に表示 */
 @media (hover: none){ .ph .x{opacity:1} }
 /* iPhoneのノッチ・ホームバー */
@@ -309,8 +314,7 @@ mark{background:rgba(255,206,84,.55);color:inherit;border-radius:3px;padding:0 1
         <span class="dnum"><span id="dMon"></span><small>月</small><span id="dNum"></span><small>日</small></span>
         <span class="dmeta"><span class="ym" id="dYm"></span><span class="wd" id="dWd"></span></span>
       </button>
-      <span class="pill" id="dRel"></span>
-      <span class="pill hol" id="dHol" hidden></span>
+      <span class="pills"><span class="pill" id="dRel"></span><span class="pill hol" id="dHol" hidden></span></span>
       <input type="date" id="datePick" class="hidden-date" tabindex="-1">
       <div class="nav">
         <button id="prev" title="前の日（Alt+←）"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
