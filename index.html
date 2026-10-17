@@ -1066,7 +1066,7 @@ $('wNew').onclick = () => {
 };
 
 // ---------- 同期（Googleドライブのアプリ専用領域。中身は暗号化してから送る） ----------
-const GOOGLE_CLIENT_ID = '';   // Google Cloud で作ったOAuthクライアントID（設定画面から入力も可）
+const GOOGLE_CLIENT_ID = '216245096552-sobliaojfaspb6ubur71q85nmbpvgc3d.apps.googleusercontent.com';   // Google Cloud で作ったOAuthクライアントID（設定画面から入力も可）
 const hosted = location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname);
 const clientId = () => { try { return GOOGLE_CLIENT_ID || localStorage.getItem('mydiary.clientId') || ''; } catch(e) { return GOOGLE_CLIENT_ID; } };
 const syncAvailable = () => hosted && cryptoOK && !!clientId();
