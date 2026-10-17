@@ -201,7 +201,7 @@ mark{background:rgba(255,206,84,.55);color:inherit;border-radius:3px;padding:0 1
 .note.alert{color:var(--warm)}
 
 /* ---------- modal ---------- */
-.modal-wrap{position:fixed;inset:0;display:grid;place-items:center;background:rgba(20,18,15,.35);backdrop-filter:blur(3px);z-index:28;padding:16px;animation:fade .2s}
+.modal-wrap{position:fixed;inset:0;display:grid;place-items:center;background:rgba(20,18,15,.35);backdrop-filter:blur(3px);z-index:35;padding:16px;animation:fade .2s}
 @keyframes fade{from{opacity:0}}
 .modal{width:min(400px,100%);background:var(--paper);border-radius:20px;padding:26px 26px 20px;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:pop .25s cubic-bezier(.2,.8,.2,1)}
 @keyframes pop{from{transform:scale(.96);opacity:0}}
@@ -1426,8 +1426,8 @@ $('lbDel').onclick = () => { const id = photosOf(lb.date)[lb.i]; if (id) confirm
 $('lightbox').onclick = e => { if (e.target === $('lightbox')) closeLightbox(); };
 
 document.addEventListener('keydown', e => {
-  if (isLocked()) return;
   if (modalOpen()) { if (e.key === 'Escape') $('mCancel').click(); return; }
+  if (isLocked()) return;
   if (lbOpen()) {
     if (e.key === 'Escape') closeLightbox();
     if (e.key === 'ArrowLeft') { lb.i--; showLb(); }
