@@ -743,7 +743,9 @@ function renderWeek(){
     $('memory').firstChild.onclick = () => openDay(past);
   } else $('memory').innerHTML = '';
 
-  const days = db.lastBackup ? (Date.now() - new Date(db.lastBackup)) / 864e5 : Infinity;
+  // 同期できていれば日記はGoogleドライブにも保管されているので、バックアップのお知らせは出さない
+  const ref = db.sync.linked && db.sync.last ? db.sync.last : db.lastBackup;
+  const days = ref ? (Date.now() - new Date(ref)) / 864e5 : Infinity;
   $('setBtn').classList.toggle('alert', keys.length > 0 && days >= 14);
 }
 
