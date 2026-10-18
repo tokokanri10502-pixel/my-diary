@@ -640,6 +640,7 @@ async function showLb(){
 }
 
 const state = { date: today(), tab: 'search', q: '', month: null };
+const isTouch = matchMedia('(hover: none) and (pointer: coarse)').matches;
 let timer = null;
 
 // ---------- appearance ----------
@@ -677,7 +678,9 @@ function openDay(date, focus){
   renderPhotos();
   renderWeek();
   const p = $('page'); p.classList.remove('swap'); void p.offsetWidth; p.classList.add('swap');
-  if (focus !== false) { const t = $('text'); t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
+  // 携帯ではキーボードを勝手に出さず、日付が見える位置（いちばん上）に戻す
+  if (isTouch) { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); window.scrollTo(0, 0); }
+  else if (focus !== false) { const t = $('text'); t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
 }
 function updateMeter(){
   const n = len($('text').value), m = $('meter');
@@ -770,7 +773,7 @@ function openDrawer(tab){
 }
 function closeDrawer(){
   $('drawer').classList.remove('open'); $('scrim').classList.remove('open'); $('drawer').setAttribute('aria-hidden', 'true');
-  $('text').focus();
+  if (!isTouch) $('text').focus();
 }
 const isOpen = () => $('drawer').classList.contains('open');
 
