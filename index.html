@@ -112,7 +112,11 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .week-head{display:flex;align-items:baseline;justify-content:space-between;padding:6px 4px 12px}
 .week-head h2{font-size:13px;letter-spacing:.12em;color:var(--sub);font-weight:600;margin:0}
 .week-head span{font-size:12px;color:var(--sub)}
-.week-list{list-style:none;margin:0;padding:0 4px 0 0;overflow-y:auto;flex:1;min-height:0}
+.week-list{list-style:none;margin:0;padding:0 4px 0 0;overflow-y:auto;flex:1;min-height:0;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.week-list::-webkit-scrollbar{width:6px}
+.week-list::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px}
+.wsep{font-size:12px;letter-spacing:.08em;color:var(--sub);font-weight:600;padding:18px 14px 6px;position:sticky;top:0;background:linear-gradient(var(--bg) 70%,transparent);z-index:1}
+.wmore{height:24px}
 .day{display:grid;grid-template-columns:46px 1fr auto;gap:12px;padding:12px 14px;border-radius:16px;cursor:pointer;transition:background .15s;position:relative}
 .day:hover{background:var(--paper)}
 .day.active{background:var(--paper);box-shadow:var(--shadow)}
@@ -344,7 +348,7 @@ mark{background:rgba(255,206,84,.55);color:inherit;border-radius:3px;padding:0 1
   </section>
 
   <aside class="week">
-    <div class="week-head"><h2>この1週間</h2><span id="stats"></span></div>
+    <div class="week-head"><h2>これまでの日記</h2><span id="stats"></span></div>
     <ol class="week-list" id="weekList"></ol>
     <div id="memory"></div>
   </aside>
@@ -660,7 +664,7 @@ async function showLb(){
   $('lbPrev').hidden = $('lbNext').hidden = ids.length < 2;
 }
 
-const state = { date: today(), tab: 'search', q: '', month: null };
+const state = { date: today(), tab: 'search', q: '', month: null, weekMore: 30 };
 const isTouch = matchMedia('(hover: none) and (pointer: coarse)').matches;
 let timer = null;
 
@@ -752,20 +756,40 @@ async function commit(){
 }
 
 // ---------- week ----------
+function dayItem(k, t){
+  const d = parse(k), e = db.entries[k], hol = holiday(k);
+  const hn = hol ? `<span class="hn">${hol}</span>` : '';
+  const ph = photosOf(k);
+  const body = e ? (e.text.trim() ? esc(e.text) : `写真 ${ph.length}枚`) : (k === t ? 'まだ書いていません' : '書いていない日');
+  return `<li class="day ${e ? '' : 'empty'} ${k === t ? 'today' : ''} ${k === state.date ? 'active' : ''}" data-date="${k}">
+    <div class="dn"><b>${d.getDate()}</b><small class="${dayClass(k)}">${k === t ? '今日' : WD[d.getDay()]}</small></div>
+    <div class="tx">${hn}${body}</div>${ph.length ? `<img class="th" data-ph="${ph[0]}" alt=""${urls.has(ph[0]) ? ` src="${urls.get(ph[0])}"` : ''}>` : ''}</li>`;
+}
+let weekObserver = null;
 function renderWeek(){
-  const t = today(); let html = '';
-  for (let i = 0; i <= 7; i++){
-    const k = shift(t, -i), d = parse(k), e = db.entries[k], hol = holiday(k);
-    const hn = hol ? `<span class="hn">${hol}</span>` : '';
-    const ph = photosOf(k);
-    const body = e ? (e.text.trim() ? esc(e.text) : `写真 ${ph.length}枚`) : (i === 0 ? 'まだ書いていません' : '書いていない日');
-    html += `<li class="day ${e ? '' : 'empty'} ${k === t ? 'today' : ''} ${k === state.date ? 'active' : ''}" data-date="${k}">
-      <div class="dn"><b>${d.getDate()}</b><small class="${dayClass(k)}">${i === 0 ? '今日' : WD[d.getDay()]}</small></div>
-      <div class="tx">${hn}${body}</div>${ph.length ? `<img class="th" data-ph="${ph[0]}" alt=""${urls.has(ph[0]) ? ` src="${urls.get(ph[0])}"` : ''}>` : ''}</li>`;
+  const t = today(), list = $('weekList'), top = list.scrollTop;
+  let html = '';
+  // 今日から7日前までは、書いていない日も表示
+  for (let i = 0; i <= 7; i++) html += dayItem(shift(t, -i), t);
+  // それより前の日記は、月ごとに区切ってスクロールで続きを表示
+  const older = Object.keys(db.entries).filter(k => k < shift(t, -7)).sort().reverse();
+  let lastM = '';
+  for (const k of older.slice(0, state.weekMore)) {
+    if (k.slice(0, 7) !== lastM) { lastM = k.slice(0, 7); html += `<li class="wsep">${Number(k.slice(0, 4))}年${Number(k.slice(5, 7))}月</li>`; }
+    html += dayItem(k, t);
   }
-  $('weekList').innerHTML = html;
-  $('weekList').querySelectorAll('.day').forEach(el => el.onclick = () => openDay(el.dataset.date));
-  $('weekList').querySelectorAll('img[data-ph]:not([src])').forEach(img => photoUrl(img.dataset.ph).then(u => { img.src = u; }).catch(() => {}));
+  if (older.length > state.weekMore) html += '<li class="wmore" id="weekMore"></li>';
+  list.innerHTML = html;
+  list.scrollTop = top;
+  list.querySelectorAll('.day').forEach(el => el.onclick = () => openDay(el.dataset.date));
+  list.querySelectorAll('img[data-ph]:not([src])').forEach(img => photoUrl(img.dataset.ph).then(u => { img.src = u; }).catch(() => {}));
+  // いちばん下まで来たら、さらに30件読み込む
+  if (weekObserver) weekObserver.disconnect();
+  const more = $('weekMore');
+  if (more && 'IntersectionObserver' in window) {
+    weekObserver = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { state.weekMore += 30; renderWeek(); } }, {rootMargin: '200px'});
+    weekObserver.observe(more);
+  }
 
   const keys = Object.keys(db.entries), mk = t.slice(0, 7);
   let streak = 0;
