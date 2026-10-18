@@ -527,8 +527,15 @@ const idbReady = new Promise(res => {
       if (!d.objectStoreNames.contains('photos')) d.createObjectStore('photos', {keyPath:'id'});
       if (!d.objectStoreNames.contains('session')) d.createObjectStore('session', {keyPath:'id'});
     };
-    r.onsuccess = () => { idb = r.result; res(); };
+    r.onsuccess = () => {
+      idb = r.result;
+      // 新しい版が開かれたら、こちらの接続はすぐ閉じて更新を妨げない
+      idb.onversionchange = () => { idb.close(); idb = null; };
+      res();
+    };
     r.onerror = () => res();
+    // 古い版が別のタブやウィンドウで開いたままだと待たされるので、知らせて先へ進む（閉じれば自動で続きが動く）
+    r.onblocked = () => { toast('My Diaryを開いているほかのタブやウィンドウを閉じてください'); setTimeout(res, 3000); };
   } catch(e) { res(); }
 });
 const reqP = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
