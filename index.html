@@ -51,6 +51,11 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .actions{margin-left:auto;display:flex;gap:4px}
 .icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--sub);position:relative;transition:background .15s,color .15s}
 .icon:hover{background:var(--paper);color:var(--ink)}
+.icon.on{background:var(--accent-soft);color:var(--accent)}
+/* 目隠し：人に画面を見せるとき、日記の中身（文章・写真・リンク）だけをぼかす */
+#text,.day .tx,.memory .tx,.res .rt,.links,.ph img,.day .th,.lb img{transition:filter .25s}
+body.veil :is(#text,.day .tx,.memory .tx,.res .rt,.links,.ph img,.day .th,.lb img){filter:blur(7px);user-select:none}
+body.veil #text{caret-color:transparent}
 .icon .dot{position:absolute;top:9px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--warm);display:none}
 .icon.alert .dot{display:block}
 .icon.sync .dot{background:var(--warm)}
@@ -325,6 +330,7 @@ mark{background:rgba(255,206,84,.55);color:inherit;border-radius:3px;padding:0 1
 <header class="top" id="top">
   <button class="brand home" id="homeBtn" title="今日の日記へ"><b class="bt">My <span>Diary</span></b><small class="since">from 2023.04.01</small></button>
   <div class="actions">
+    <button class="icon" id="veilBtn" title="目隠し（日記の中身をぼかす）" aria-pressed="false"></button>
     <button class="icon" data-open="search" title="検索（/）"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
     <button class="icon" data-open="archive" title="アーカイブ"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></button>
     <button class="icon sync" id="syncBtn" title="同期" hidden><svg viewBox="0 0 24 24"><path d="M7 18.5h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7 9.6 4.5 4.5 0 0 0 7 18.5z"/></svg><span class="dot"></span></button>
@@ -1615,6 +1621,19 @@ $('lbPrev').onclick = () => { lb.i--; showLb(); };
 $('lbNext').onclick = () => { lb.i++; showLb(); };
 $('lbDel').onclick = () => { const id = photosOf(lb.date)[lb.i]; if (id) confirmRemovePhoto(lb.date, id, showLb); };
 $('lightbox').onclick = e => { if (e.target === $('lightbox')) closeLightbox(); };
+
+// 目隠し：押すたびに切り替え。この端末では次に開いたときも同じ状態にする
+const EYE = '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>';
+const EYE_OFF = '<path d="M9.9 5.7A9.6 9.6 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4M6.3 7.3C3.9 8.9 2.5 12 2.5 12S6 18.5 12 18.5a9 9 0 0 0 4.2-1M3 3l18 18"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>';
+function setVeil(on){
+  document.body.classList.toggle('veil', on);
+  const b = $('veilBtn');
+  b.innerHTML = icon(on ? EYE_OFF : EYE); b.classList.toggle('on', on);
+  b.setAttribute('aria-pressed', on); b.title = on ? '目隠しを外す' : '目隠し（日記の中身をぼかす）';
+  try { on ? localStorage.setItem('mydiary.veil', '1') : localStorage.removeItem('mydiary.veil'); } catch(e) {}
+}
+setVeil((() => { try { return localStorage.getItem('mydiary.veil') === '1'; } catch(e) { return false; } })());
+$('veilBtn').onclick = () => setVeil(!document.body.classList.contains('veil'));
 
 document.addEventListener('keydown', e => {
   if (modalOpen()) { if (e.key === 'Escape') $('mCancel').click(); return; }
