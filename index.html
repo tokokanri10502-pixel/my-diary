@@ -133,10 +133,18 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 /* ---------- photos ---------- */
 .photos{display:flex;gap:10px;padding:2px 0 14px;flex-wrap:wrap}
 .links{display:flex;gap:8px;padding:0 0 12px;flex-wrap:wrap}
-.links a{display:inline-flex;align-items:center;gap:6px;max-width:100%;font-size:12.5px;padding:5px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);text-decoration:none;transition:filter .15s}
-.links a:hover{filter:brightness(.96)}
+.links .lk{display:inline-flex;align-items:center;max-width:100%;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.links a{display:inline-flex;align-items:center;gap:6px;min-width:0;font-size:12.5px;padding:5px 12px;color:inherit;text-decoration:none}
+.links .lk:has(.x) a{padding-right:2px}
+.links a:hover span{text-decoration:underline}
+.links .x{display:grid;place-items:center;width:26px;height:26px;margin-right:2px;border-radius:50%;color:var(--sub);opacity:.7}
+.links .x:hover{opacity:1;background:var(--paper)}
+.links .x svg{width:12px;height:12px}
 .links svg{width:14px;height:14px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .links span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+a.lc{display:inline-flex;align-items:center;gap:4px;max-width:100%;margin:4px 6px 0 0;font-size:12px;padding:2px 10px;border-radius:999px;background:var(--accent-soft);text-decoration:none;font-family:var(--gothic);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.lnk{display:inline-flex;align-items:center;gap:2px;margin-left:6px;font-family:var(--gothic);font-size:11.5px;color:var(--accent);vertical-align:middle}
+.lnk svg,a.lc svg{width:12px;height:12px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 a.ul{color:var(--accent);text-decoration:underline;text-underline-offset:2px;word-break:break-all}
 .ph{position:relative;margin:0;width:96px;height:96px;border-radius:14px;overflow:hidden;background:var(--bg);cursor:zoom-in;box-shadow:0 1px 3px rgba(0,0,0,.08);animation:pop .25s cubic-bezier(.2,.8,.2,1)}
 .ph img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
@@ -442,6 +450,14 @@ const len = s => [...s.replace(/\s/g, '')].length;
 // 本文中の http(s) のURL（末尾の句読点・閉じかっこは含めない）
 const URL_RE = /https?:\/\/[!#-&(-;=?-~]+/g;
 const urlsIn = text => (text.match(URL_RE) || []).map(u => u.replace(/[.,;:!?)\]}]+$/, '')).filter(u => u.length > 8);
+const linksOf = d => (db.entries[d] && db.entries[d].links) || [];
+const LINK_ICON = '<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>';
+// リンクの見出し（ドメイン＋パス。www. は省く）
+function linkLabel(u){
+  try { const x = new URL(u); return x.hostname.replace(/^www\./, '') + (x.pathname.length > 1 ? decodeURI(x.pathname) : ''); } catch(e) { return u; }
+}
+// 一覧用：日記に付けたリンクを小さなボタンで並べる
+const linkChips = list => list.map(u => `<a class="ul lc" href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(u)}">${icon(LINK_ICON)}${esc(linkLabel(u))}</a>`).join('');
 // URLをリンクにして返す。URL以外の部分は f（エスケープや検索語の強調）で整える
 function linkify(text, f = esc){
   let out = '', last = 0;
@@ -642,7 +658,7 @@ async function removePhoto(d, id){
   const prev = {...e};
   e.photos = photosOf(d).filter(x => x !== id); e.updated = new Date().toISOString();
   if (!e.photos.length) delete e.photos;
-  if (!e.text.trim() && !e.photos) dropEntry(d);
+  if (!e.text.trim() && !e.photos && !e.links) dropEntry(d);
   if (!(await persist())) { putEntry(d, prev); toast('削除できませんでした'); return; }
   scheduleSync(1500);
   delRec(id).catch(() => {});
@@ -730,13 +746,39 @@ function openDay(date, focus){
   else if (focus !== false) { const t = $('text'); t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
 }
 function renderLinks(){
-  const box = $('links'), list = [...new Set(urlsIn($('text').value))];
+  const box = $('links'), saved = linksOf(state.date);
+  const list = [...new Set([...saved, ...urlsIn($('text').value)])];
   box.hidden = !list.length;
-  box.innerHTML = list.map(u => {
-    let label = u;
-    try { const x = new URL(u); label = x.hostname.replace(/^www\./, '') + (x.pathname.length > 1 ? decodeURI(x.pathname) : ''); } catch(e) {}
-    return `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(u)}">${icon('<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>')}<span>${esc(label)}</span></a>`;
-  }).join('');
+  box.innerHTML = list.map(u => `<span class="lk"><a href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(u)}">${icon(LINK_ICON)}<span>${esc(linkLabel(u))}</span></a>${saved.includes(u) ? `<button class="x" data-u="${esc(u)}" title="リンクを外す">${icon('<path d="M6 6l12 12M18 6 6 18"/>')}</button>` : ''}</span>`).join('');
+  box.querySelectorAll('.x').forEach(b => b.onclick = () => removeLink(state.date, b.dataset.u));
+}
+// 貼り付けたURLを本文から外す（リンクはボタンとして残す）。カーソル位置はそのまま
+function pullUrls(){
+  const ta = $('text'), found = [...new Set(urlsIn(ta.value))];
+  if (!found.length) return [];
+  const cut = v => {
+    for (const u of found) {
+      const re = u.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      v = v.replace(new RegExp('^[ \\t\\u3000]*' + re + '[ \\t\\u3000]*(\\n|$)', 'gm'), '').replace(new RegExp('[ \\t\\u3000]*' + re, 'g'), '');
+    }
+    return v;
+  };
+  const c = ta.selectionStart, before = cut(ta.value.slice(0, c)), after = cut(ta.value.slice(c));
+  ta.value = before + after;
+  if (document.activeElement === ta) ta.setSelectionRange(before.length, before.length);
+  return found;
+}
+async function removeLink(d, u){
+  flush();
+  const e = db.entries[d]; if (!e) return;
+  const prev = {...e};
+  e.links = linksOf(d).filter(x => x !== u); e.updated = new Date().toISOString();
+  if (!e.links.length) delete e.links;
+  if (!e.text.trim() && !e.photos && !e.links) dropEntry(d);
+  if (!(await persist())) { putEntry(d, prev); toast('外せませんでした'); }
+  else scheduleSync(1500);
+  if (state.date === d) { renderLinks(); setSave(db.entries[d] ? 'saved' : 'idle', db.entries[d]); }
+  renderWeek();
 }
 function updateMeter(){
   const n = len($('text').value), m = $('meter');
@@ -763,12 +805,16 @@ function setSaveTitle(e){
 }
 function scheduleSave(){ clearTimeout(timer); timer = setTimeout(commit, 800); }
 function flush(){ if (timer) { clearTimeout(timer); commit(); } }
-async function commit(){
+async function commit(pull){
   timer = null;
-  const d = state.date, t = $('text').value.replace(/\s+$/, ''), prev = db.entries[d];
+  const d = state.date, prev = db.entries[d];
+  const pulled = pull ? pullUrls() : [];
+  const t = $('text').value.replace(/\s+$/, ''), links = [...new Set([...linksOf(d), ...pulled])];
+  const added = links.length > linksOf(d).length;
+  if (pulled.length) updateMeter();
   const show = (k, e) => { if (state.date === d) setSave(k, e); };
   const hasPhotos = !!(prev && prev.photos && prev.photos.length);
-  if (!t.trim() && !hasPhotos) {
+  if (!t.trim() && !hasPhotos && !links.length) {
     if (!prev) { show('idle'); return; }
     const prevTomb = db.tomb[d];
     dropEntry(d);
@@ -776,10 +822,13 @@ async function commit(){
     if (!(await persist())) { putEntry(d, prev); if (prevTomb) db.tomb[d] = prevTomb; show('error'); renderWeek(); return; }
     show('idle'); scheduleSync(1500);
   } else {
-    if (prev && prev.text === t) { show('saved', prev); return; }
+    if (prev && prev.text === t && !added) { show('saved', prev); return; }
     const now = new Date().toISOString();
     const prevTomb = db.tomb[d];
-    putEntry(d, {...prev, text:t, created:prev ? prev.created : now, updated:now});
+    const next = {...prev, text:t, created:prev ? prev.created : now, updated:now};
+    if (links.length) next.links = links; else delete next.links;
+    putEntry(d, next);
+    if (state.date === d) renderLinks();
     renderWeek();
     if (!(await persist())) { if (prev) db.entries[d] = prev; else delete db.entries[d]; if (prevTomb) db.tomb[d] = prevTomb; show('error'); renderWeek(); return; }
     show('saved', db.entries[d]); scheduleSync(1500);
@@ -791,7 +840,8 @@ function dayItem(k, t){
   const d = parse(k), e = db.entries[k], hol = holiday(k);
   const hn = hol ? `<span class="hn">${hol}</span>` : '';
   const ph = photosOf(k);
-  const body = e ? (e.text.trim() ? linkify(e.text) : `写真 ${ph.length}枚`) : (k === t ? 'まだ書いていません' : '書いていない日');
+  const lk = linksOf(k), ln = lk.length ? `<span class="lnk" title="リンク ${lk.length}件">${icon(LINK_ICON)}${lk.length}</span>` : '';
+  const body = e ? (e.text.trim() ? linkify(e.text) + ln : ph.length ? `写真 ${ph.length}枚${ln}` : linkChips(lk)) : (k === t ? 'まだ書いていません' : '書いていない日');
   return `<li class="day ${e ? '' : 'empty'} ${k === t ? 'today' : ''} ${k === state.date ? 'active' : ''}" data-date="${k}">
     <div class="dn"><b>${d.getDate()}</b><small class="${dayClass(k)}">${k === t ? '今日' : WD[d.getDay()]}</small></div>
     <div class="tx">${hn}${body}</div>${ph.length ? `<img class="th" data-ph="${ph[0]}" alt=""${urls.has(ph[0]) ? ` src="${urls.get(ph[0])}"` : ''}>` : ''}</li>`;
@@ -830,7 +880,7 @@ function renderWeek(){
   const md = state.date.slice(5), past = keys.filter(k => k.slice(5) === md && k < state.date).sort().reverse()[0];
   if (past) {
     const ago = Number(state.date.slice(0,4)) - Number(past.slice(0,4));
-    $('memory').innerHTML = `<div class="memory"><div class="lbl">${ago}年前のこの日</div><div class="tx">${linkify(db.entries[past].text)}</div></div>`;
+    $('memory').innerHTML = `<div class="memory"><div class="lbl">${ago}年前のこの日</div><div class="tx">${linkify(db.entries[past].text)}${linkChips(linksOf(past))}</div></div>`;
     $('memory').firstChild.onclick = () => openDay(past);
   } else $('memory').innerHTML = '';
 
@@ -861,7 +911,7 @@ function hl(text){
 }
 function fmt(k){ const d = parse(k), h = holiday(k); return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WD[d.getDay()]}${h ? '・' + h : ''}）`; }
 function listHtml(keys, mark = true){
-  return keys.map(k => `<div class="res" data-date="${k}"><div class="rd">${fmt(k)}${photosOf(k).length ? `　写真${photosOf(k).length}枚` : ''}</div><div class="rt">${linkify(db.entries[k].text, mark ? hl : esc)}</div></div>`).join('');
+  return keys.map(k => `<div class="res" data-date="${k}"><div class="rd">${fmt(k)}${photosOf(k).length ? `　写真${photosOf(k).length}枚` : ''}</div><div class="rt">${linkify(db.entries[k].text, mark ? hl : esc)}${linksOf(k).length ? `<div>${linkChips(linksOf(k))}</div>` : ''}</div></div>`).join('');
 }
 function bindList(root){
   root.querySelectorAll('.res').forEach(el => el.onclick = () => { closeDrawer(); openDay(el.dataset.date); });
@@ -887,7 +937,7 @@ function renderResults(){
   const terms = state.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const r = $('results');
   if (!terms.length) { r.innerHTML = `<div class="hint">スペースで区切ると、すべての語を含む日記を探します。</div>`; return; }
-  const keys = Object.keys(db.entries).sort().reverse().filter(k => { const h = (k + ' ' + holiday(k) + ' ' + db.entries[k].text).toLowerCase(); return terms.every(t => h.includes(t)); });
+  const keys = Object.keys(db.entries).sort().reverse().filter(k => { const h = (k + ' ' + holiday(k) + ' ' + db.entries[k].text + ' ' + linksOf(k).join(' ')).toLowerCase(); return terms.every(t => h.includes(t)); });
   r.innerHTML = keys.length ? `<div class="hint">${keys.length}件見つかりました</div>` + listHtml(keys) : `<div class="empty-state">見つかりませんでした</div>`;
   bindList(r);
 }
@@ -1104,7 +1154,7 @@ async function lockNow(){
   db = blank(); key = null; salt = null;
   clearTimeout(sync.timer); setSync('off');
   clearUrls();
-  $('text').value = ''; $('weekList').innerHTML = ''; $('memory').innerHTML = ''; $('photos').innerHTML = ''; $('photos').hidden = true;
+  $('text').value = ''; $('links').innerHTML = ''; $('links').hidden = true; $('weekList').innerHTML = ''; $('memory').innerHTML = ''; $('photos').innerHTML = ''; $('photos').hidden = true;
   setLocked(true);
 }
 $('lockForm').onsubmit = async e => {
@@ -1458,7 +1508,7 @@ function exportTxt(){
     const d = parse(k);
     if (k.slice(0, 7) !== last) { out += `\n■ ${d.getFullYear()}年${d.getMonth()+1}月\n`; last = k.slice(0, 7); }
     const n = photosOf(k).length;
-    out += `\n${fmt(k)}${n ? `　［写真${n}枚］` : ''}\n${db.entries[k].text}\n`;
+    out += `\n${fmt(k)}${n ? `　［写真${n}枚］` : ''}\n${db.entries[k].text}\n${linksOf(k).map(u => u + '\n').join('')}`;
   });
   download(`my-diary-${today()}.txt`, out, 'text/plain');
 }
@@ -1483,7 +1533,9 @@ async function merge(d){
       try { recs.push(await packPhoto(id, k, new Blob([fromB64(p.data)], {type:p.type}))); keep.push(id); } catch(e) {}
     }
     const e = {...v}; if (keep.length) e.photos = keep; else delete e.photos;
-    if (!e.text.trim() && !e.photos) continue;
+    if (Array.isArray(e.links)) e.links = e.links.filter(u => typeof u === 'string' && /^https?:\/\//.test(u)); else delete e.links;
+    if (e.links && !e.links.length) delete e.links;
+    if (!e.text.trim() && !e.photos && !e.links) continue;
     db.entries[k] = e;
   }
   if (recs.length) await putRecs(recs);
@@ -1519,6 +1571,10 @@ function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add(
 
 // ---------- events ----------
 $('text').addEventListener('input', () => { updateMeter(); renderLinks(); scheduleSave(); });
+// URLを貼り付けたら、本文から外してリンクのボタンにする（手で打ったURLは入力欄を離れたときに）
+const pullNow = () => { if (urlsIn($('text').value).length) { clearTimeout(timer); commit(true); } };
+$('text').addEventListener('paste', () => setTimeout(pullNow));
+$('text').addEventListener('blur', pullNow);
 // 一覧の中のリンクを押したときは、その日を開かずにリンク先だけを開く
 document.addEventListener('click', e => { if (e.target.closest && e.target.closest('a.ul')) e.stopPropagation(); }, true);
 $('prev').onclick = () => openDay(shift(state.date, -1));
