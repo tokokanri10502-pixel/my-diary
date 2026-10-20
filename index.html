@@ -132,6 +132,12 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 
 /* ---------- photos ---------- */
 .photos{display:flex;gap:10px;padding:2px 0 14px;flex-wrap:wrap}
+.links{display:flex;gap:8px;padding:0 0 12px;flex-wrap:wrap}
+.links a{display:inline-flex;align-items:center;gap:6px;max-width:100%;font-size:12.5px;padding:5px 12px;border-radius:999px;background:var(--accent-soft);color:var(--accent);text-decoration:none;transition:filter .15s}
+.links a:hover{filter:brightness(.96)}
+.links svg{width:14px;height:14px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.links span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+a.ul{color:var(--accent);text-decoration:underline;text-underline-offset:2px;word-break:break-all}
 .ph{position:relative;margin:0;width:96px;height:96px;border-radius:14px;overflow:hidden;background:var(--bg);cursor:zoom-in;box-shadow:0 1px 3px rgba(0,0,0,.08);animation:pop .25s cubic-bezier(.2,.8,.2,1)}
 .ph img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
 .ph:hover img{transform:scale(1.05)}
@@ -338,6 +344,7 @@ mark{background:rgba(255,206,84,.55);color:inherit;border-radius:3px;padding:0 1
     </div>
     <div class="rule"></div>
     <textarea id="text" spellcheck="false"></textarea>
+    <div class="links" id="links" hidden></div>
     <div class="photos" id="photos" hidden></div>
     <div class="foot">
       <div class="meter" id="meter" title="目安：100〜300字"><div class="zone"></div><div class="fill" id="fill"></div></div>
@@ -432,6 +439,20 @@ const shift = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return
 const today = () => ymd(new Date());
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const len = s => [...s.replace(/\s/g, '')].length;
+// 本文中の http(s) のURL（末尾の句読点・閉じかっこは含めない）
+const URL_RE = /https?:\/\/[!#-&(-;=?-~]+/g;
+const urlsIn = text => (text.match(URL_RE) || []).map(u => u.replace(/[.,;:!?)\]}]+$/, '')).filter(u => u.length > 8);
+// URLをリンクにして返す。URL以外の部分は f（エスケープや検索語の強調）で整える
+function linkify(text, f = esc){
+  let out = '', last = 0;
+  for (const m of text.matchAll(URL_RE)) {
+    const u = m[0].replace(/[.,;:!?)\]}]+$/, '');
+    if (u.length <= 8) continue;
+    out += f(text.slice(last, m.index)) + `<a class="ul" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${f(u)}</a>`;
+    last = m.index + u.length;
+  }
+  return out + f(text.slice(last));
+}
 const icon = p => `<svg viewBox="0 0 24 24">${p}</svg>`;
 
 // ---------- 祝日（内閣府の規定に基づきオフラインで計算） ----------
@@ -700,12 +721,22 @@ function openDay(date, focus){
   $('text').placeholder = PROMPTS[(d.getDate() + d.getMonth()) % PROMPTS.length];
   setSave(e ? 'saved' : 'idle', e);
   updateMeter();
+  renderLinks();
   renderPhotos();
   renderWeek();
   const p = $('page'); p.classList.remove('swap'); void p.offsetWidth; p.classList.add('swap');
   // 携帯ではキーボードを勝手に出さず、日付が見える位置（いちばん上）に戻す
   if (isTouch) { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); window.scrollTo(0, 0); }
   else if (focus !== false) { const t = $('text'); t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
+}
+function renderLinks(){
+  const box = $('links'), list = [...new Set(urlsIn($('text').value))];
+  box.hidden = !list.length;
+  box.innerHTML = list.map(u => {
+    let label = u;
+    try { const x = new URL(u); label = x.hostname.replace(/^www\./, '') + (x.pathname.length > 1 ? decodeURI(x.pathname) : ''); } catch(e) {}
+    return `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" title="${esc(u)}">${icon('<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>')}<span>${esc(label)}</span></a>`;
+  }).join('');
 }
 function updateMeter(){
   const n = len($('text').value), m = $('meter');
@@ -760,7 +791,7 @@ function dayItem(k, t){
   const d = parse(k), e = db.entries[k], hol = holiday(k);
   const hn = hol ? `<span class="hn">${hol}</span>` : '';
   const ph = photosOf(k);
-  const body = e ? (e.text.trim() ? esc(e.text) : `写真 ${ph.length}枚`) : (k === t ? 'まだ書いていません' : '書いていない日');
+  const body = e ? (e.text.trim() ? linkify(e.text) : `写真 ${ph.length}枚`) : (k === t ? 'まだ書いていません' : '書いていない日');
   return `<li class="day ${e ? '' : 'empty'} ${k === t ? 'today' : ''} ${k === state.date ? 'active' : ''}" data-date="${k}">
     <div class="dn"><b>${d.getDate()}</b><small class="${dayClass(k)}">${k === t ? '今日' : WD[d.getDay()]}</small></div>
     <div class="tx">${hn}${body}</div>${ph.length ? `<img class="th" data-ph="${ph[0]}" alt=""${urls.has(ph[0]) ? ` src="${urls.get(ph[0])}"` : ''}>` : ''}</li>`;
@@ -799,7 +830,7 @@ function renderWeek(){
   const md = state.date.slice(5), past = keys.filter(k => k.slice(5) === md && k < state.date).sort().reverse()[0];
   if (past) {
     const ago = Number(state.date.slice(0,4)) - Number(past.slice(0,4));
-    $('memory').innerHTML = `<div class="memory"><div class="lbl">${ago}年前のこの日</div><div class="tx">${esc(db.entries[past].text)}</div></div>`;
+    $('memory').innerHTML = `<div class="memory"><div class="lbl">${ago}年前のこの日</div><div class="tx">${linkify(db.entries[past].text)}</div></div>`;
     $('memory').firstChild.onclick = () => openDay(past);
   } else $('memory').innerHTML = '';
 
@@ -830,7 +861,7 @@ function hl(text){
 }
 function fmt(k){ const d = parse(k), h = holiday(k); return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${WD[d.getDay()]}${h ? '・' + h : ''}）`; }
 function listHtml(keys, mark = true){
-  return keys.map(k => `<div class="res" data-date="${k}"><div class="rd">${fmt(k)}${photosOf(k).length ? `　写真${photosOf(k).length}枚` : ''}</div><div class="rt">${mark ? hl(db.entries[k].text) : esc(db.entries[k].text)}</div></div>`).join('');
+  return keys.map(k => `<div class="res" data-date="${k}"><div class="rd">${fmt(k)}${photosOf(k).length ? `　写真${photosOf(k).length}枚` : ''}</div><div class="rt">${linkify(db.entries[k].text, mark ? hl : esc)}</div></div>`).join('');
 }
 function bindList(root){
   root.querySelectorAll('.res').forEach(el => el.onclick = () => { closeDrawer(); openDay(el.dataset.date); });
@@ -1342,7 +1373,7 @@ function refreshAfterSync(dates, before){
   if (dates.has(state.date)) {
     const e = db.entries[state.date];
     if (before !== null && !timer && $('text').value.replace(/\s+$/, '') === before) {
-      $('text').value = e ? e.text : ''; updateMeter(); setSave(e ? 'saved' : 'idle', e);
+      $('text').value = e ? e.text : ''; updateMeter(); renderLinks(); setSave(e ? 'saved' : 'idle', e);
     }
     renderPhotos();
   }
@@ -1487,7 +1518,9 @@ let tt;
 function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2000); }
 
 // ---------- events ----------
-$('text').addEventListener('input', () => { updateMeter(); scheduleSave(); });
+$('text').addEventListener('input', () => { updateMeter(); renderLinks(); scheduleSave(); });
+// 一覧の中のリンクを押したときは、その日を開かずにリンク先だけを開く
+document.addEventListener('click', e => { if (e.target.closest && e.target.closest('a.ul')) e.stopPropagation(); }, true);
 $('prev').onclick = () => openDay(shift(state.date, -1));
 $('next').onclick = () => { if (state.date < today()) openDay(shift(state.date, 1)); };
 $('toToday').onclick = () => openDay(today());
