@@ -52,9 +52,9 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--sub);position:relative;transition:background .15s,color .15s}
 .icon:hover{background:var(--paper);color:var(--ink)}
 .icon.on{background:var(--accent-soft);color:var(--accent)}
-/* 目隠し：人に画面を見せるとき、日記の中身（文章・写真・リンク）だけをぼかす */
-#text,.day .tx,.memory .tx,.res .rt,.links,.ph img,.day .th,.lb img{transition:filter .25s}
-body.veil :is(#text,.day .tx,.memory .tx,.res .rt,.links,.ph img,.day .th,.lb img){filter:blur(7px);user-select:none}
+/* 目隠し：人に画面を見せるとき、日記の文章とリンクだけをぼかす（写真はそのまま見せる） */
+#text,.day .tx,.memory .tx,.res .rt,.links{transition:filter .25s}
+body.veil :is(#text,.day .tx,.memory .tx,.res .rt,.links){filter:blur(7px);user-select:none}
 body.veil #text{caret-color:transparent}
 .icon .dot{position:absolute;top:9px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--warm);display:none}
 .icon.alert .dot{display:block}
