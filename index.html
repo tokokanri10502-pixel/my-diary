@@ -52,10 +52,13 @@ svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke
 .icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--sub);position:relative;transition:background .15s,color .15s}
 .icon:hover{background:var(--paper);color:var(--ink)}
 .icon.on{background:var(--accent-soft);color:var(--accent)}
-/* 目隠し：人に画面を見せるとき、日記の文章とリンクだけをぼかす（写真はそのまま見せる） */
-#text,.day .tx,.memory .tx,.res .rt,.links{transition:filter .25s}
-body.veil :is(#text,.day .tx,.memory .tx,.res .rt,.links){filter:blur(7px);user-select:none}
-body.veil #text{caret-color:transparent}
+/* 目隠し：人に画面を見せるとき、日記の文章だけをぼかす（写真とリンクはそのまま見せる） */
+#text{transition:filter .25s}
+:is(.day .tx,.memory .tx,.res .rt){transition:color .25s,text-shadow .25s}
+body.veil #text{filter:blur(7px);user-select:none;caret-color:transparent}
+/* 一覧などの文章は文字だけをぼかし、リンク（アドレス）はそのまま見せる */
+body.veil :is(.day .tx,.memory .tx,.res .rt){color:transparent;text-shadow:0 0 7px var(--ink);user-select:none}
+body.veil :is(.day .tx,.memory .tx,.res .rt) :is(a.ul,.lnk){color:var(--accent);text-shadow:none;user-select:auto}
 .icon .dot{position:absolute;top:9px;right:9px;width:7px;height:7px;border-radius:50%;background:var(--warm);display:none}
 .icon.alert .dot{display:block}
 .icon.sync .dot{background:var(--warm)}
