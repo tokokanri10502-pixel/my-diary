@@ -172,7 +172,49 @@ a.ul{color:var(--accent);text-decoration:underline;text-underline-offset:2px;wor
 .lbbtn:hover{background:rgba(255,255,255,.24)}
 #lbClose{top:18px;right:18px} #lbDel{top:18px;right:72px}
 #lbPrev{left:18px;top:50%;transform:translateY(-50%)} #lbNext{right:18px;top:50%;transform:translateY(-50%)}
-.lb .cnt{position:absolute;bottom:22px;left:0;right:0;text-align:center;color:rgba(255,255,255,.7);font-size:13px}
+.lb .cnt{position:absolute;bottom:calc(22px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;color:rgba(255,255,255,.7);font-size:13px;pointer-events:none}
+.lbopen{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(52px + env(safe-area-inset-bottom));padding:9px 18px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-size:13px;white-space:nowrap;transition:background .15s}
+.lbopen:hover{background:rgba(255,255,255,.26)}
+
+/* ---------- 写真ページ ---------- */
+.gallery{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;animation:fade .2s}
+.ghead,.gindex,.gwrap{max-width:1360px;width:100%;margin:0 auto}
+.ghead{display:flex;align-items:center;gap:8px;padding:calc(14px + env(safe-area-inset-top)) 24px 8px}
+.gback{display:flex;align-items:center;gap:2px;padding:6px 10px 6px 4px;border-radius:10px;color:var(--sub);font-size:13.5px;transition:background .15s,color .15s}
+.gback:hover{background:var(--paper);color:var(--ink)}
+.ghead h2{margin:0 0 0 4px;font-family:var(--mincho);font-size:21px;font-weight:600;letter-spacing:.04em}
+.ghead .gcount{margin-left:auto;color:var(--sub);font-size:12.5px}
+.gindex{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:4px 24px 12px;scrollbar-width:none}
+.gindex::-webkit-scrollbar{display:none}
+.gindex .gy{flex-shrink:0;font-size:11.5px;font-weight:600;letter-spacing:.06em;color:var(--sub);padding:0 2px 0 10px}
+.gindex .gy:first-child{padding-left:0}
+.gindex button{flex-shrink:0;padding:5px 13px;border-radius:999px;background:var(--paper);font-size:12.5px;box-shadow:0 1px 2px rgba(60,50,30,.06);transition:background .15s,color .15s}
+.gindex button.on{background:var(--navy);color:#fff}
+@media (prefers-color-scheme: dark){ .gindex button.on{color:#111} }
+.gbody{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:0 24px calc(40px + env(safe-area-inset-bottom))}
+.gmon h3{position:sticky;top:0;z-index:1;display:flex;align-items:baseline;gap:10px;margin:0;padding:12px 2px 10px;font-family:var(--mincho);font-size:17px;font-weight:600;background:linear-gradient(var(--bg) 78%,transparent)}
+.gmon h3 span{font-family:var(--gothic);font-size:12px;font-weight:400;color:var(--sub)}
+.gmon:last-child{min-height:calc(100vh - 150px);min-height:calc(100dvh - 150px - env(safe-area-inset-top))}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;margin-bottom:22px}
+.gt{position:relative;aspect-ratio:1;padding:0;border-radius:10px;overflow:hidden;background:var(--line)}
+.gt img{width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .35s ease,transform .35s ease}
+.gt.ready img{opacity:1}
+.gt:hover img{transform:scale(1.04)}
+.gt .gd{position:absolute;left:6px;bottom:6px;padding:1px 8px;border-radius:999px;background:rgba(0,0,0,.42);color:#fff;font-size:11px;font-variant-numeric:tabular-nums;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.gt .gd.gsun{background:rgba(199,84,84,.88)}
+.gt .gd.gsat{background:rgba(74,114,196,.88)}
+.gempty{text-align:center;color:var(--sub);padding:80px 0;font-size:13.5px;line-height:2}
+.arch-mode{display:flex;justify-content:center;margin:2px 0 16px}
+.arch-mode .seg button{padding:6px 22px;font-size:13px}
+@media (max-width: 520px){
+  .ghead{padding:calc(10px + env(safe-area-inset-top)) 12px 6px}
+  .gindex{padding:2px 12px 10px}
+  .gbody{padding:0 8px calc(32px + env(safe-area-inset-bottom))}
+  .ggrid{grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:16px}
+  .gt{border-radius:6px}
+  .gt .gd{left:4px;bottom:4px;font-size:10px;padding:0 6px}
+  .gmon h3{padding:10px 6px 8px;font-size:16px}
+}
 .memory{margin-top:12px;padding:16px 18px;border-radius:16px;background:var(--accent-soft);cursor:pointer}
 .memory .lbl{font-size:11.5px;letter-spacing:.1em;color:var(--accent);font-weight:600;margin-bottom:4px}
 .memory .tx{font-family:var(--body-font);font-size:13.5px;line-height:1.8;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
@@ -423,12 +465,23 @@ mark{background:rgba(255,206,84,.55);color:inherit;border-radius:3px;padding:0 1
   </form>
 </div>
 
+<section class="gallery" id="gallery" hidden aria-label="写真">
+  <div class="ghead">
+    <button class="gback" id="galBack" title="戻る（Esc）"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>戻る</button>
+    <h2>写真</h2>
+    <span class="gcount" id="galCount"></span>
+  </div>
+  <div class="gindex" id="galIndex"></div>
+  <div class="gbody" id="galBody"></div>
+</section>
+
 <div class="lb" id="lightbox" hidden>
   <img id="lbImg" alt="">
   <button class="lbbtn" id="lbClose" title="閉じる（Esc）"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
   <button class="lbbtn" id="lbDel" title="この写真を削除"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13"/></svg></button>
   <button class="lbbtn" id="lbPrev" title="前へ（←）"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
   <button class="lbbtn" id="lbNext" title="次へ（→）"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+  <button class="lbopen" id="lbOpenDay" hidden>この日の日記を開く</button>
   <div class="cnt" id="lbCount"></div>
 </div>
 
@@ -672,6 +725,7 @@ async function removePhoto(d, id){
   scheduleSync(1500);
   delRec(id).catch(() => {});
   if (urls.has(id)) { URL.revokeObjectURL(urls.get(id)); urls.delete(id); }
+  dropThumb(id);
   if (state.date === d) { renderPhotos(); setSave(db.entries[d] ? 'saved' : 'idle', db.entries[d]); }
   renderWeek();
   toast('写真を削除しました');
@@ -696,18 +750,117 @@ function renderPhotos(){
 }
 
 // ライトボックス
-const lb = {date:null, i:0};
+// list があるとき（写真ページから開いたとき）は、その月の写真を順に送る
+const lb = {date:null, i:0, list:null};
 const lbOpen = () => !$('lightbox').hidden;
-function openLightbox(d, i){ lb.date = d; lb.i = i; $('lightbox').hidden = false; showLb(); }
+const lbItems = () => lb.list || photosOf(lb.date).map(id => ({date: lb.date, id}));
+function openLightbox(d, i){ lb.list = null; lb.date = d; lb.i = i; $('lightbox').hidden = false; showLb(); }
+function openLightboxList(list, i){ lb.list = list; lb.i = i; $('lightbox').hidden = false; showLb(); }
 function closeLightbox(){ $('lightbox').hidden = true; $('lbImg').src = ''; }
 async function showLb(){
-  const ids = photosOf(lb.date);
-  if (!ids.length) { closeLightbox(); return; }
-  lb.i = (lb.i + ids.length) % ids.length;
+  const items = lbItems();
+  if (!items.length) { closeLightbox(); return; }
+  lb.i = (lb.i + items.length) % items.length;
+  const it = items[lb.i];
   const img = $('lbImg'); img.style.animation = 'none'; void img.offsetWidth; img.style.animation = '';
-  img.src = await photoUrl(ids[lb.i]);
-  $('lbCount').textContent = ids.length > 1 ? `${lb.i + 1} / ${ids.length}` : '';
-  $('lbPrev').hidden = $('lbNext').hidden = ids.length < 2;
+  img.src = await photoUrl(it.id);
+  const d = parse(it.date), when = `${d.getMonth() + 1}月${d.getDate()}日（${WD[d.getDay()]}）`;
+  const pos = items.length > 1 ? `${lb.i + 1} / ${items.length}` : '';
+  $('lbCount').textContent = lb.list ? when + (pos ? '　' + pos : '') : pos;
+  $('lbOpenDay').hidden = !lb.list;
+  $('lbPrev').hidden = $('lbNext').hidden = items.length < 2;
+}
+
+// ---------- 写真ページ ----------
+// 一覧用に小さく縮めた写真（その場で作り、端末内のメモリにだけ置く）
+const thumbs = new Map();
+function thumbUrl(id){
+  if (thumbs.has(id)) return thumbs.get(id);
+  const p = (async () => {
+    await idbReady; if (!idb) return '';
+    const rec = await getRec(id); if (!rec) return '';
+    const bmp = await createImageBitmap(await unpackPhoto(rec));
+    const s = Math.min(1, 420 / Math.min(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    if (bmp.close) bmp.close();
+    const b = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.8));
+    return b ? URL.createObjectURL(b) : '';
+  })();
+  p.catch(() => thumbs.delete(id));
+  thumbs.set(id, p); return p;
+}
+function dropThumb(id){ const p = thumbs.get(id); if (p) { thumbs.delete(id); p.then(u => u && URL.revokeObjectURL(u)).catch(() => {}); } }
+function clearThumbs(){ [...thumbs.keys()].forEach(dropThumb); }
+// 一度に読み込むのは4枚まで（たくさんあっても重くならないように）
+let thumbQ = [], thumbBusy = 0;
+function queueThumb(img){ thumbQ.push(img); pumpThumbs(); }
+function pumpThumbs(){
+  while (thumbBusy < 4 && thumbQ.length) {
+    const img = thumbQ.shift();
+    if (!img.isConnected) continue;
+    thumbBusy++;
+    thumbUrl(img.dataset.id)
+      .then(u => { if (u && img.isConnected) { img.onload = () => img.parentElement.classList.add('ready'); img.src = u; } })
+      .catch(() => {})
+      .finally(() => { thumbBusy--; pumpThumbs(); });
+  }
+}
+const galOpen = () => !$('gallery').hidden;
+let galObserver = null, galLists = {};
+function openGallery(){ $('gallery').hidden = false; renderGallery(); $('galBody').scrollTop = 0; }
+function closeGallery(){ $('gallery').hidden = true; if (galObserver) galObserver.disconnect(); thumbQ = []; }
+function renderGallery(){
+  const body = $('galBody'), top = body.scrollTop;
+  const days = Object.keys(db.entries).filter(k => photosOf(k).length).sort();
+  const months = {};
+  days.forEach(k => (months[k.slice(0, 7)] = months[k.slice(0, 7)] || []).push(k));
+  const mkeys = Object.keys(months).sort().reverse();   // 新しい月が上、月の中は日付順
+  galLists = {};
+  mkeys.forEach(m => { galLists[m] = months[m].flatMap(k => photosOf(k).map(id => ({date: k, id}))); });
+  const total = mkeys.reduce((n, m) => n + galLists[m].length, 0);
+  $('galCount').textContent = total ? `${total}枚` : '';
+  // 年・月の目次
+  let idx = '', lastY = '';
+  mkeys.forEach(m => {
+    if (m.slice(0, 4) !== lastY) { lastY = m.slice(0, 4); idx += `<span class="gy">${lastY}</span>`; }
+    idx += `<button data-m="${m}">${Number(m.slice(5))}月</button>`;
+  });
+  $('galIndex').innerHTML = idx; $('galIndex').hidden = mkeys.length < 2;
+  body.innerHTML = mkeys.length ? '<div class="gwrap">' + mkeys.map(m => `<section class="gmon" id="gm-${m}">
+      <h3>${Number(m.slice(0, 4))}年${Number(m.slice(5))}月<span>${galLists[m].length}枚</span></h3>
+      <div class="ggrid">${galLists[m].map((p, i) => `<button class="gt" data-m="${m}" data-i="${i}" title="${fmt(p.date)}"><img alt="" data-id="${p.id}"><span class="gd ${dayClass(p.date) ? "g" + dayClass(p.date) : ""}">${Number(p.date.slice(8))}日</span></button>`).join('')}</div>
+    </section>`).join('') + '</div>'
+    : '<div class="gempty">まだ写真がありません。<br>日記に写真を貼ると、ここに月ごとに並びます。</div>';
+  body.scrollTop = top;
+  body.querySelectorAll('.gt').forEach(t => t.onclick = () => openLightboxList(galLists[t.dataset.m], Number(t.dataset.i)));
+  $('galIndex').querySelectorAll('button').forEach(b => b.onclick = () => {
+    const sec = $('gm-' + b.dataset.m); if (sec) body.scrollTo({top: sec.offsetTop - body.offsetTop, behavior: 'smooth'});
+  });
+  // 画面に近づいた写真から読み込む
+  if (galObserver) galObserver.disconnect();
+  thumbQ = [];
+  galObserver = new IntersectionObserver(es => es.forEach(x => {
+    if (x.isIntersecting) { galObserver.unobserve(x.target); queueThumb(x.target); }
+  }), {root: body, rootMargin: '600px 0px'});
+  body.querySelectorAll('.gt img').forEach(img => {
+    // すでに作ってある縮小写真はすぐ表示
+    galObserver.observe(img);
+  });
+  markGalIndex();
+}
+// 今見ている月の目次を強調し、目次も横に追従させる
+function markGalIndex(){
+  const body = $('galBody'), y = body.scrollTop + 40;
+  let cur = null;
+  body.querySelectorAll('.gmon').forEach(sec => { if (sec.offsetTop - body.offsetTop <= y) cur = sec.id.slice(3); });
+  if (!cur) { const f = body.querySelector('.gmon'); cur = f && f.id.slice(3); }
+  $('galIndex').querySelectorAll('button').forEach(b => {
+    const on = b.dataset.m === cur;
+    if (on && !b.classList.contains('on')) b.scrollIntoView({inline: 'nearest', block: 'nearest'});
+    b.classList.toggle('on', on);
+  });
 }
 
 const state = { date: today(), tab: 'search', q: '', month: null, weekMore: 30 };
@@ -959,7 +1112,8 @@ function renderArchive(){
   });
   const curM = today().slice(0, 7), fiscal = db.settings.yearMode === 'fiscal';
   const order = fiscal ? [4,5,6,7,8,9,10,11,12,1,2,3] : [1,2,3,4,5,6,7,8,9,10,11,12];
-  $('dbody').innerHTML = [...years].sort((a, b) => b - a).map(Y => {
+  const nPhotos = Object.keys(db.entries).reduce((n, k) => n + photosOf(k).length, 0);
+  $('dbody').innerHTML = `<div class="arch-mode"><div class="seg"><button class="on">日記</button><button id="toGallery">写真${nPhotos ? `<small style="margin-left:6px;color:var(--sub)">${nPhotos}</small>` : ''}</button></div></div>` + [...years].sort((a, b) => b - a).map(Y => {
     let total = 0;
     const tiles = order.map(m => {
       const y = fiscal && m < 4 ? Y + 1 : Y, key = `${y}-${pad(m)}`, n = counts[key] || 0;
@@ -970,6 +1124,7 @@ function renderArchive(){
     return `<div class="year"><h3>${yearLabel(Y)}<span>${total}日</span></h3><div class="months">${tiles}</div></div>`;
   }).join('');
   $('dbody').querySelectorAll('.mo:not(:disabled)').forEach(b => b.onclick = () => { state.month = b.dataset.m; renderMonth(); $('dbody').scrollTop = 0; });
+  $('toGallery').onclick = () => { closeDrawer(); openGallery(); };
 }
 function renderMonth(){
   const [y, m] = state.month.split('-').map(Number);
@@ -1144,7 +1299,7 @@ let lockMode = 'local', remoteEnv = null;
 const LOCK_SUB = {local:'パスワードを入力して日記を開きます', welcome:'はじめに、使い方を選んでください', remote:'Googleドライブの日記のパスワードを入力してください'};
 function setLocked(on, mode = 'local'){
   $('lock').hidden = !on;
-  $('top').inert = on; $('main').inert = on; $('drawer').inert = on; $('lightbox').inert = on;
+  $('top').inert = on; $('main').inert = on; $('drawer').inert = on; $('lightbox').inert = on; $('gallery').inert = on;
   if (!on) return;
   lockMode = mode;
   $('lockSub').textContent = LOCK_SUB[mode];
@@ -1159,7 +1314,7 @@ const isLocked = () => !$('lock').hidden;
 async function lockNow(){
   flush(); await chain;
   if (isOpen()) closeDrawer();
-  closeLightbox();
+  closeLightbox(); closeGallery(); clearThumbs();
   db = blank(); key = null; salt = null;
   clearTimeout(sync.timer); setSync('off');
   clearUrls();
@@ -1622,8 +1777,25 @@ $('text').addEventListener('paste', e => {
 $('lbClose').onclick = closeLightbox;
 $('lbPrev').onclick = () => { lb.i--; showLb(); };
 $('lbNext').onclick = () => { lb.i++; showLb(); };
-$('lbDel').onclick = () => { const id = photosOf(lb.date)[lb.i]; if (id) confirmRemovePhoto(lb.date, id, showLb); };
+$('lbDel').onclick = () => {
+  const it = lbItems()[lb.i]; if (!it) return;
+  confirmRemovePhoto(it.date, it.id, () => {
+    if (lb.list) { lb.list = lb.list.filter(x => x.id !== it.id); if (galOpen()) renderGallery(); }
+    showLb();
+  });
+};
+$('lbOpenDay').onclick = () => { const it = lbItems()[lb.i]; if (!it) return; closeLightbox(); closeGallery(); openDay(it.date); };
 $('lightbox').onclick = e => { if (e.target === $('lightbox')) closeLightbox(); };
+// iPhoneでは横にスワイプして前後の写真へ
+let swipeX = null;
+$('lightbox').addEventListener('touchstart', e => { swipeX = e.touches.length === 1 ? e.touches[0].clientX : null; }, {passive: true});
+$('lightbox').addEventListener('touchend', e => {
+  if (swipeX === null) return;
+  const dx = e.changedTouches[0].clientX - swipeX; swipeX = null;
+  if (Math.abs(dx) > 50 && lbItems().length > 1) { lb.i += dx < 0 ? 1 : -1; showLb(); }
+});
+$('galBack').onclick = closeGallery;
+$('galBody').addEventListener('scroll', () => requestAnimationFrame(markGalIndex), {passive: true});
 
 // 目隠し：押すたびに切り替え。この端末では次に開いたときも同じ状態にする
 const EYE = '<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>';
@@ -1647,6 +1819,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight') { lb.i++; showLb(); }
     return;
   }
+  if (galOpen()) { if (e.key === 'Escape') closeGallery(); return; }
   if (e.key === 'Escape' && isOpen()) { closeDrawer(); return; }
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
   if ((e.key === '/' && !typing) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); openDrawer('search'); }
